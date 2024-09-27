@@ -12,4 +12,6 @@
 pygls
 packaging
 
-# TODO: Add your tool here
+# TODO: Use published package when ready
+--extra-index-url https://test.pypi.org/simple/
+djangoly==0.1.0

@@ -4,10 +4,12 @@ from __future__ import annotations
 import json
 import os
 import pathlib
-import re
 import sys
 import traceback
 from typing import Any, Optional, Sequence
+
+from djangoly.core.commands.check import analyze_file
+from lib.file_watch_helpers import is_django_view_file, notify_user_to_test_change, check_for_test_file
 
 # **********************************************************
 # Update sys.path before importing any bundled libraries.
@@ -34,7 +36,6 @@ import lsp_jsonrpc as jsonrpc
 import lsp_utils as utils
 import lsprotocol.types as lsp
 from pygls import server, uris, workspace
-from djangoly.core.commands.check import analyze_file  # Import the Djangoly API
 
 WORKSPACE_SETTINGS = {}
 GLOBAL_SETTINGS = {}
@@ -61,6 +62,10 @@ def did_open(params: lsp.DidOpenTextDocumentParams) -> None:
 def did_save(params: lsp.DidSaveTextDocumentParams) -> None:
     """LSP handler for textDocument/didSave request."""
     document = LSP_SERVER.workspace.get_document(params.text_document.uri)
+    if is_django_view_file(document):
+        notify_user_to_test_change(LSP_SERVER, document)
+        if not check_for_test_file(document.path):
+            notify_user_to_test_change(LSP_SERVER, document)
     diagnostics: list[lsp.Diagnostic] = _linting_helper(document)
     LSP_SERVER.publish_diagnostics(document.uri, diagnostics)
 

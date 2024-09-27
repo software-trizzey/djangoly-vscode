@@ -33,6 +33,9 @@ update_sys_path(
 import lsp_jsonrpc as jsonrpc
 import lsp_utils as utils
 
+from djangoly.core.commands.check import check_command
+
+
 RPC = jsonrpc.create_json_rpc(sys.stdin.buffer, sys.stdout.buffer)
 
 EXIT_NOW = False
@@ -56,13 +59,14 @@ while not EXIT_NOW:
                 # with code for your tool. You can also use `utils.run_api` helper, which
                 # handles changing working directories, managing io streams, etc.
                 # Also update `_run_tool_on_document` and `_run_tool` functions in `lsp_server.py`.
-                result = utils.run_module(
-                    module=msg["module"],
-                    argv=msg["argv"],
-                    use_stdin=msg["useStdin"],
-                    cwd=msg["cwd"],
-                    source=msg["source"] if "source" in msg else None,
-                )
+                # result = utils.run_module(
+                #     module=msg["module"],
+                #     argv=msg["argv"],
+                #     use_stdin=msg["useStdin"],
+                #     cwd=msg["cwd"],
+                #     source=msg["source"] if "source" in msg else None,
+                # )
+                result = check_command(file_path=msg["source"])
             except Exception:  # pylint: disable=broad-except
                 result = utils.RunResult("", traceback.format_exc(chain=True))
                 is_exception = True

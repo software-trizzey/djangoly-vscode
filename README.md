@@ -1,89 +1,117 @@
-# Template for VS Code python tools extensions
+# Djangoly: Write Cleaner, Faster, Scalable Django Code
 
-This is a template repository to get you started on building a VS Code extension for your favorite python tool. It could be a linter, formatter, or code analysis, or all of those together. This template will give you the basic building blocks you need to build a VS Code extension for it.
-
-## Programming Languages and Frameworks
-
-The extension template has two parts, the extension part and language server part. The extension part is written in TypeScript, and language server part is written in Python over the [_pygls_][pygls] (Python language server) library.
-
-For the most part you will be working on the python part of the code when using this template. You will be integrating your tool with the extension part using the [Language Server Protocol](https://microsoft.github.io/language-server-protocol). [_pygls_][pygls] currently works on the [version 3.16 of LSP](https://microsoft.github.io/language-server-protocol/specifications/specification-3-16/).
-
-The TypeScript part handles working with VS Code and its UI. The extension template comes with few settings pre configured that can be used by your tool. If you need to add new settings to support your tool, you will have to work with a bit of TypeScript. The extension has examples for few settings that you can follow. You can also look at extensions developed by our team for some of the popular tools as reference.
+Djangoly is a VS Code extension built for Django developers (surprise, surprise). It uses static analysis to ensure your project aligns with Django best practices and conventions. You can install the extension via the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=Alchemized.djangoly) or by searching for `djangoly` in your IDE's extension tab.
 
 ## Requirements
 
 1. VS Code 1.64.0 or greater
-1. Python 3.8 or greater
-1. node >= 18.17.0
-1. npm >= 8.19.0 (`npm` is installed with node, check npm version, use `npm install -g npm@8.3.0` to update)
-1. Python extension for VS Code
+2. Python 3.9 or greater
+3. node >= 18.17.0
 
-You should know to create and work with python virtual environments.
+## Features ✨
+
+- **Django-Specific Linting**: Automatically check your Django code against best practices and common pitfalls, including:
+
+  - **Complex View Detection**: Flags Django views with high complexity and suggests that they be refactored to follow the **Fat Model, Thin View** or **Services** design patterns. This rule reduces view complexity and promotes maintainability and scalability.
+  - **ForeignKey Validation**: Ensures all `ForeignKey` fields have a `related_name` and `on_delete` argument specified to avoid common pitfalls in query relationships and data management.
+  - **Raw SQL Query Detection**: Flags direct usage of raw SQL queries, including `raw()` and `connection.cursor()`. These can bypass Django ORM protections and introduce security vulnerabilities. Djangoly suggests safer alternatives using Django's ORM.
+  - **CharField and TextField Nullability**: Ensures `CharField` and `TextField` fields are not incorrectly marked as `null=True`, which can lead to inconsistencies in data integrity.
+  - **Missing Exception Handling Detection**: Flags Django functional views and methods in class-based views that lack exception handling. This feature helps you ensure that error handling is properly implemented, improving the robustness and stability of your Django application.
+- **Security Checks**: Includes several security checks to help ensure your Django project follows best practices for security:
+
+  - **DEBUG Setting**: Checks if `DEBUG` is set to `True`. This setting should be `False` in production environments.
+  - **SECRET_KEY Protection**: Verifies that the `SECRET_KEY` is not hardcoded in your settings file.
+  - **ALLOWED_HOSTS Configuration**: Checks the `ALLOWED_HOSTS` setting for potential security issues.
+  - **COOKIE Settings**: Ensures the `CSRF_COOKIE_SECURE` and `SESSION_COOKIE_SECURE` settings are set to `True` for production environments.
+- **Test Suite Conventions**: Notify developers to add or update test files when changes are detected in Django views or models.
+- **Redundant Comment Detection**: Flags comments that do not contribute additional information or context to the code.
+
+## Djangoly Convention and Security Rules 📏🔒
+
+Djangoly implements a comprehensive set of rules to help you write cleaner, safer, and more efficient Django code. These rules cover various aspects of Django development, including:
+
+* **Security (SEC)**: Checks for proper security settings and practices.
+
+  * Example: Ensuring DEBUG is set to False in production.
+* **Code Quality (CDQ)**: Enforces coding standards and best practices.
+
+  * Example: Detecting overly complex views that should be refactored.
+* **Style (STY)**: Ensures consistent coding style across your project.
+
+  * Example: Enforcing naming conventions for variables and functions.
+* **Configuration (CFG)**: Verifies correct Django configuration settings.
+
+  * Example: Checking for proper ALLOWED\_HOSTS configuration.
+
+Each rule is designed to catch common pitfalls, enforce best practices, and improve the overall quality and security of your Django projects.
+
+For a complete list of all rules, including detailed descriptions and examples, please refer to our [Convention Rules Documentation](https://github.com/software-trizzey/djangoly-docs/blob/main/docs/CONVENTION_RULES.md).
+
+By following these rules, you can ensure that your Django code is not only functional but also secure, efficient, and maintainable.
+
+## Quick Start 🏃‍♂️💨
+
+1. **Get an API Key**: If you don't already have an API key, you can signup for one via this [form](https://forms.gle/gEEZdfhWpQyQh2qVA).
+2. **Install the Extension**: [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=Alchemized.djangoly)
+3. **Set Up Your Django Project**: If you haven't already, set up a Django project in your workspace.
+4. **Configure Django Settings**: Open the extension settings in VS Code and configure your Django-specific settings.
+5. **Start Coding**: Begin developing your Django project. The extension will automatically start analyzing your code.
+6. **Review Suggestions**: Check the Problems panel in VS Code for Django best practice suggestions and quick fixes.
+
+**Note**: To modify the extension rules, access these settings by going to `Preferences → Settings → Extensions → Djangoly`.
+
+## How Djangoly Improves Your Code 🧑‍🏫
+
+### 1. Missing Exception Handling Detection
+
+![Djangoly exception handler demo](https://raw.githubusercontent.com/software-trizzey/images/main/assets/images/djangoly-exception-handler-demo.gif)
+
+Djangoly ensures that your Django views and methods have proper error handling. It flags functions that lack try-except blocks and can create exception handlers based on your preferences and the function's context.
+
+### 2. Security Settings Check
+
+Before (in settings.py):
+
+```python
+DEBUG = True
+SECRET_KEY = 'my_secret_key'
+ALLOWED_HOSTS = ['*']
+```
+
+After (with Djangoly warnings):
+
+```python
+DEBUG = False  # Djangoly: Ensure DEBUG is False in production
+SECRET_KEY = os.environ.get('SECRET_KEY')  # Djangoly: Use environment variables for sensitive data
+ALLOWED_HOSTS = ['example.com', 'www.example.com']  # Djangoly: Specify allowed hosts explicitly
+```
+
+Djangoly identifies potential security risks in your Django settings and suggests safer alternatives.
+
+### 2. Test Suite Conventions
+
+![Djangoly untested code demo](https://raw.githubusercontent.com/software-trizzey/images/main/assets/images/flag-untested-api-code.gif)
+Djangoly reminds you to create and update test files when you modify your Django views or models.
+
+## Known Issues & Limitations 🐞
+
+- **False Positives**: As an MVP undergoing rapid development, Djangoly may generate inaccurate diagnostics and recommendations. If you encounter any issues, please report them to [support@djangoly.com](mailto:support@djangoly.com).
+
+## Join Our Community on Discord 💬
+
+Have questions or run into issues? Join our [Discord server](https://discord.gg/U8Mq8Vx9q9) to connect with the development team and other users. You'll get faster responses to your questions, feedback, and issues, and you'll be able to discuss new features with the community.
+
+# Extension Development
 
 ## Getting Started
 
 1. Use this [template to create your repo](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template).
-1. Check-out your repo locally on your development machine.
-1. Create and activate a python virtual environment for this project in a terminal. Be sure to use the minimum version of python for your tool. This template was written to work with python 3.8 or greater.
-1. Install `nox` in the activated environment: `python -m pip install nox`.
-1. Add your favorite tool to `requirements.in`
-1. Run `nox --session setup`.
-1. **Optional** Install test dependencies `python -m pip install -r src/test/python_tests/requirements.txt`. You will have to install these to run tests from the Test Explorer.
-1. Open `package.json`, look for and update the following things:
-    1. Find and replace `<pytool-module>` with module name for your tool. This will be used internally to create settings namespace, register commands, etc. Recommendation is to use lower case version of the name, no spaces, `-` are ok. For example, replacing `<pytool-module>` with `pylint` will lead to settings looking like `pylint.args`. Another example, replacing `<pytool-module>` with `black-formatter` will make settings look like `black-formatter.args`.
-    1. Find and replace `<pytool-display-name>` with display name for your tool. This is used as the title for the extension in market place, extensions view, output logs, etc. For example, for the `black` extension this is `Black Formatter`.
-1. Install node packages using `npm install`.
-1. Go to https://marketplace.visualstudio.com/vscode and create a publisher account if you don't already have one.
-    1. Use the published name in `package.json` by replacing `<my-publisher>` with the name you registered in the marketplace.
-
-## Features of this Template
-
-After finishing the getting started part, this template would have added the following. Assume `<pytool-module>` was replaced with `mytool`, and `<pytool-display-name>` with`My Tool`:
-
-1. A command `My Tool: Restart Server` (command Id: `mytool.restart`).
-1. Following setting:
-    - `mytool.args`
-    - `mytool.path`
-    - `mytool.importStrategy`
-    - `mytool.interpreter`
-    - `mytool.showNotification`
-1. Following triggers for extension activation:
-    - On Language `python`.
-    - On File with `.py` extension found in the opened workspace.
-1. Following commands are registered:
-    - `mytool.restart`: Restarts the language server.
-1. Output Channel for logging `Output` > `My Tool`
-
-## Adding features from your tool
-
-Open `bundled/tool/lsp_server.py`, here is where you will do most of the changes. Look for `TODO` comments there for more details.
-
-Also look for `TODO` in other locations in the entire template:
-
-- `bundled/tool/lsp_runner.py` : You may need to update this in some special cases.
-- `src/test/python_tests/test_server.py` : This is where you will write tests. There are two incomplete examples provided there to get you started.
-- All the markdown files in this template have some `TODO` items, be sure to check them out as well. That includes updating the LICENSE file, even if you want to keep it MIT License.
-
-References, to other extension created by our team using the template:
-
-- Protocol reference: <https://microsoft.github.io/language-server-protocol/specifications/specification-3-16/>
-- Implementation showing how to handle Linting on file `open`, `save`, and `close`. [Pylint](https://github.com/microsoft/vscode-pylint/tree/main/bundled/tool)
-- Implementation showing how to handle Formatting. [Black Formatter](https://github.com/microsoft/vscode-black-formatter/tree/main/bundled/tool)
-- Implementation showing how to handle Code Actions. [isort](https://github.com/microsoft/vscode-isort/blob/main/bundled/tool)
-
-## Building and Run the extension
-
-Run the `Debug Extension and Python` configuration form VS Code. That should build and debug the extension in host window.
-
-Note: if you just want to build you can run the build task in VS Code (`ctrl`+`shift`+`B`)
-
-## Debugging
-
-To debug both TypeScript and Python code use `Debug Extension and Python` debug config. This is the recommended way. Also, when stopping, be sure to stop both the Typescript, and Python debug sessions. Otherwise, it may not reconnect to the python session.
-
-To debug only TypeScript code, use `Debug Extension` debug config.
-
-To debug a already running server or in production server, use `Python Attach`, and select the process that is running `lsp_server.py`.
+2. Check-out your repo locally on your development machine.
+3. Create and activate a python virtual environment for this project in a terminal. Be sure to use the minimum version of python for your tool. This template was written to work with python 3.8 or greater.
+4. Install `nox` in the activated environment: `python -m pip install nox`.
+5. Add your favorite tool to `requirements.in`
+6. Run `nox --session setup`.
+7. **Optional** Install test dependencies `python -m pip install -r src/test/python_tests/requirements.txt`. You will have to install these to run tests from the Test Explorer.
 
 ## Logging and Logs
 
@@ -112,47 +140,17 @@ Run `nox --session lint` to run linting on both Python and TypeScript code. Plea
 ## Packaging and Publishing
 
 1. Update various fields in `package.json`. At minimum, check the following fields and update them accordingly. See [extension manifest reference](https://code.visualstudio.com/api/references/extension-manifest) to add more fields:
-    - `"publisher"`: Update this to your publisher id from <https://marketplace.visualstudio.com/>.
-    - `"version"`: See <https://semver.org/> for details of requirements and limitations for this field.
-    - `"license"`: Update license as per your project. Defaults to `MIT`.
-    - `"keywords"`: Update keywords for your project, these will be used when searching in the VS Code marketplace.
-    - `"categories"`: Update categories for your project, makes it easier to filter in the VS Code marketplace.
-    - `"homepage"`, `"repository"`, and `"bugs"` : Update URLs for these fields to point to your project.
-    - **Optional** Add `"icon"` field with relative path to a image file to use as icon for this project.
-1. Make sure to check the following markdown files:
-    - **REQUIRED** First time only: `CODE_OF_CONDUCT.md`, `LICENSE`, `SUPPORT.md`, `SECURITY.md`
-    - Every Release: `CHANGELOG.md`
-1. Build package using `nox --session build_package`.
-1. Take the generated `.vsix` file and upload it to your extension management page <https://marketplace.visualstudio.com/manage>.
+   - `"publisher"`: Update this to your publisher id from [https://marketplace.visualstudio.com/](https://marketplace.visualstudio.com/).
+   - `"version"`: See [https://semver.org/](https://semver.org/) for details of requirements and limitations for this field.
+   - `"license"`: Update license as per your project. Defaults to `MIT`.
+   - `"keywords"`: Update keywords for your project, these will be used when searching in the VS Code marketplace.
+   - `"categories"`: Update categories for your project, makes it easier to filter in the VS Code marketplace.
+   - `"homepage"`, `"repository"`, and `"bugs"` : Update URLs for these fields to point to your project.
+   - **Optional** Add `"icon"` field with relative path to a image file to use as icon for this project.
+2. Make sure to check the following markdown files:
+   - **REQUIRED** First time only: `CODE_OF_CONDUCT.md`, `LICENSE`, `SUPPORT.md`
+   - Every Release: `CHANGELOG.md`
+3. Build package using `nox --session build_package`.
+4. Take the generated `.vsix` file and upload it to your extension management page [https://marketplace.visualstudio.com/manage](https://marketplace.visualstudio.com/manage).
 
-To do this from the command line see here <https://code.visualstudio.com/api/working-with-extensions/publishing-extension>
-
-## Upgrading Dependencies
-
-Dependabot yml is provided to make it easy to setup upgrading dependencies in this extension. Be sure to add the labels used in the dependabot to your repo.
-
-To manually upgrade your local project:
-
-1. Create a new branch
-1. Run `npm update` to update node modules.
-1. Run `nox --session setup` to upgrade python packages.
-
-## Troubleshooting
-
-### Changing path or name of `lsp_server.py` something else
-
-If you want to change the name of `lsp_server.py` to something else, you can. Be sure to update `constants.ts` and `src/test/python_tests/lsp_test_client/session.py`.
-
-Also make sure that the inserted paths in `lsp_server.py` are pointing to the right folders to pick up the dependent packages.
-
-### Module not found errors
-
-This can occurs if `bundled/libs` is empty. That is the folder where we put your tool and other dependencies. Be sure to follow the build steps need for creating and bundling the required libs.
-
-Common one is [_pygls_][pygls] module not found.
-
-# TODO: The maintainer of this repo has not yet edited this file
-
-**Repo Owner** Make sure you update this. As a repository owner you will need to update this file with specific instructions for your extension.
-
-[pygls]: https://github.com/openlawlibrary/pygls
+To do this from the command line see here [https://code.visualstudio.com/api/working-with-extensions/publishing-extension](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)

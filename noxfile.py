@@ -151,10 +151,15 @@ def lint(session: nox.Session) -> None:
 @nox.session()
 def build_package(session: nox.Session) -> None:
     """Builds VSIX package for publishing."""
+    dev_mode = '--dev' in session.posargs
     _check_files(["README.md", "LICENSE", "SECURITY.md", "SUPPORT.md"])
     _setup_template_environment(session)
     session.run("npm", "install", external=True)
-    session.run("npm", "run", "vsce-package", external=True)
+
+    if dev_mode:
+        session.run("npm", "run", "dev:package", external=True)
+    else:
+        session.run("npm", "run", "vsce-package", external=True)
 
 
 @nox.session()
@@ -163,3 +168,11 @@ def update_packages(session: nox.Session) -> None:
     session.install("wheel", "pip-tools")
     _update_pip_packages(session)
     _update_npm_packages(session)
+
+
+@nox.session()
+def dev_publish(session: nox.Session) -> None:
+    """Installs the current version of the extension into the host machine for local testing."""
+    session.install("twine")
+    session.run("npm", "run", "dev:package", external=True)
+    session.run("npm", "run", "dev-publish", external=True)

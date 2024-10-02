@@ -80,31 +80,32 @@ def did_close(params: lsp.DidCloseTextDocumentParams) -> None:
 
 def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
     """Runs Djangoly's analysis and returns diagnostics."""
-    model_cache_json = str({})
-    
     analyzer = DjangoAnalyzer(
         file_path=document.path,
         source_code=document.source,
         conventions={},
         settings={},
-        model_cache_json=model_cache_json
+        model_cache_json=str({})
     )
     
     result = analyzer.parse_code()
     
     diagnostics = []
-    for diag in result["diagnostics"]:
-        diagnostic = lsp.Diagnostic(
+    for diagnostic in result["diagnostics"]:
+        zeroed_line = diagnostic.line - 1
+        end_line = len(document.lines[zeroed_line])
+
+        lsp_diagnostic = lsp.Diagnostic(
             range=lsp.Range(
-                start=lsp.Position(line=diag.line - 1, character=diag.col_offset),
-                end=lsp.Position(line=diag.line - 1, character=diag.end_col_offset)
+                start=lsp.Position(line=zeroed_line, character=diagnostic.col_offset),
+                end=lsp.Position(line=zeroed_line, character=end_line)
             ),
-            message=diag.message,
-            severity=_get_severity(diag.severity),
-            source="Djangoly-v2", # TODO: use constant
-            code=diag.issue_code
+            message=diagnostic.message,
+            severity=_get_severity(diagnostic.severity),
+            source="Djangoly-vscode", # TODO: use constant
+            code=diagnostic.issue_code
         )
-        diagnostics.append(diagnostic)
+        diagnostics.append(lsp_diagnostic)
     return diagnostics
 
 def _get_severity(severity: str) -> lsp.DiagnosticSeverity:

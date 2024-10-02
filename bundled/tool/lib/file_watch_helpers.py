@@ -15,8 +15,9 @@ def is_django_view_file(document: workspace.Document) -> bool:
 
 def notify_user_to_test_change(LSP_SERVER: server.LanguageServer, document: workspace.Document) -> None:
     """Notify the user to test changes when a Django view file is saved."""
-    message = f"The Django view file '{document.path}' was modified and saved. Please ensure the changes are tested."
-    LSP_SERVER.show_message(message, MessageType.Info)
+    base_file_name = os.path.basename(document.path)
+    message = f"The Django view file '{base_file_name}' was modified and saved. Please ensure the changes are tested."
+    LSP_SERVER.show_message(message, MessageType.Warning)
 
 
 def get_possible_test_paths(source_uri: str) -> List[str]:

@@ -8,7 +8,10 @@ import sys
 import traceback
 from typing import Any, Optional, Sequence
 
-from djangoly.core.commands.check import analyze_file
+# Add the bundled Djangoly source directory to the Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), 'libs', 'djangoly'))
+
+
 from lib.file_watch_helpers import is_django_view_file, notify_user_to_test_change, check_for_test_file
 
 # **********************************************************
@@ -49,6 +52,7 @@ LSP_SERVER = server.LanguageServer(
 # **********************************************************
 # Linting features start here
 # **********************************************************
+from djangoly.core.parsers.django_parser import DjangoAnalyzer
 
 @LSP_SERVER.feature(lsp.TEXT_DOCUMENT_DID_OPEN)
 def did_open(params: lsp.DidOpenTextDocumentParams) -> None:
@@ -77,54 +81,37 @@ def did_close(params: lsp.DidCloseTextDocumentParams) -> None:
 
 def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
     """Runs Djangoly's analysis and returns diagnostics."""
-    print("Running Djangoly")
-    result = _run_tool_on_document(document)
-    print("Djangoly result:", result)
-    if result and result.stdout:
-        djangoly_output = json.loads(result.stdout)
-        return _parse_djangoly_output(djangoly_output)
-    return []
-
-def _run_tool_on_document(
-    document: workspace.Document,
-    use_stdin: bool = False,
-    extra_args: Optional[Sequence[str]] = None,
-) -> utils.RunResult | None:
-    """Runs Djangoly analysis on the given document."""
-    if extra_args is None:
-        extra_args = []
-
-    if not document.path.endswith(".py"):
-        return None
-
-    try:
-        result = analyze_file(document.path)  # Directly use the Djangoly API to analyze the file
-        return utils.RunResult(
-            stdout=json.dumps(result),  # Pass the result as JSON
-            stderr=""
-        )
-    except Exception as e:
-        log_error(f"Error running Djangoly: {str(e)}")
-        return utils.RunResult(stdout="", stderr=traceback.format_exc(chain=True))
-
-def _parse_djangoly_output(output: dict) -> list[lsp.Diagnostic]:
-    """Parse Djangoly output into LSP diagnostics."""
+    model_cache_json = str({})
+    
+    analyzer = DjangoAnalyzer(
+        file_path=document.path,
+        source_code=document.source,
+        conventions={},
+        settings={},
+        model_cache_json=model_cache_json
+    )
+    
+    result = analyzer.parse_code()
+    
+    # Convert the result from Djangoly's format to LSP diagnostic format
     diagnostics = []
-    for file_path, issues in output.items():
-        for issue in issues:
-            diagnostic = lsp.Diagnostic(
-                range=lsp.Range(
-                    start=lsp.Position(line=issue["line"] - 1, character=issue["col"]),
-                    end=lsp.Position(line=issue["line"] - 1, character=issue["end_col"]),
-                ),
-                message=issue["message"],
-                severity=_get_severity(issue.get("severity", "warning")),
-                source="Djangoly",
-            )
-            diagnostics.append(diagnostic)
+    for diag in result["diagnostics"]:
+        diagnostic = lsp.Diagnostic(
+            range=lsp.Range(
+                start=lsp.Position(line=diag.line - 1, character=diag.col_offset),
+                end=lsp.Position(line=diag.line - 1, character=diag.end_col_offset)
+            ),
+            message=diag.message,
+            severity=_get_severity(diag.severity),
+            source="Djangoly-v2", # TODO: use constant
+            code=diag.issue_code
+        )
+        diagnostics.append(diagnostic)
+    print("diagnostics",diagnostics)
     return diagnostics
 
 def _get_severity(severity: str) -> lsp.DiagnosticSeverity:
+    print("severity", severity)
     """Map Djangoly severities to LSP severities."""
     if severity == "high":
         return lsp.DiagnosticSeverity.Error

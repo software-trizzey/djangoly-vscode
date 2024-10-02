@@ -57,7 +57,6 @@ from djangoly.core.parsers.django_parser import DjangoAnalyzer
 @LSP_SERVER.feature(lsp.TEXT_DOCUMENT_DID_OPEN)
 def did_open(params: lsp.DidOpenTextDocumentParams) -> None:
     """LSP handler for textDocument/didOpen request."""
-    print("Document open")
     document = LSP_SERVER.workspace.get_document(params.text_document.uri)
     diagnostics: list[lsp.Diagnostic] = _linting_helper(document)
     LSP_SERVER.publish_diagnostics(document.uri, diagnostics)
@@ -93,7 +92,6 @@ def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
     
     result = analyzer.parse_code()
     
-    # Convert the result from Djangoly's format to LSP diagnostic format
     diagnostics = []
     for diag in result["diagnostics"]:
         diagnostic = lsp.Diagnostic(
@@ -107,15 +105,15 @@ def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
             code=diag.issue_code
         )
         diagnostics.append(diagnostic)
-    print("diagnostics",diagnostics)
     return diagnostics
 
 def _get_severity(severity: str) -> lsp.DiagnosticSeverity:
-    print("severity", severity)
+    from djangoly.core.utils.issue import IssueSeverity
+
     """Map Djangoly severities to LSP severities."""
-    if severity == "high":
+    if severity == IssueSeverity.ERROR:
         return lsp.DiagnosticSeverity.Error
-    elif severity == "medium":
+    elif severity == IssueSeverity.WARNING:
         return lsp.DiagnosticSeverity.Warning
     else:
         return lsp.DiagnosticSeverity.Information
